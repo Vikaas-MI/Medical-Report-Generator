@@ -4,8 +4,8 @@ from docx import Document
 
 def populate_template(data: dict):
 
-    template_path = "Backend/uploads/template.docx"
-    output_path = os.path.join("Backend/reports", "report.docx")
+    template_path = "uploads/template.docx"
+    output_path = os.path.join("reports", "report.docx")
     document = Document(template_path)
 
     for i, paragraph in enumerate(document.paragraphs):

@@ -7,7 +7,7 @@ from services.extractor import docx_text_extract
 
 router = APIRouter()
 
-UPLOADS_DIR = "Backend/uploads"
+UPLOADS_DIR = "uploads"
 
 @router.post("/generate-report")
 async def generate_report(template: UploadFile = File(...), support: UploadFile = File(...)):
