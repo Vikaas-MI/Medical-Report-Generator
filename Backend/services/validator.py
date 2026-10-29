@@ -1,4 +1,7 @@
+import json
+
 from model import get_model
+from services.draft import create_draft
 
 def validate(draft: str, source: str):
     prompt = f"""
@@ -19,21 +22,21 @@ def validate(draft: str, source: str):
     5. Contradictions: Identify conflicting statements within the report or between the report and the source data.
     6. Structure and readability: Check whether the report is organized, clear, professional, and free of significant grammatical errors.
     7. Unsupported conclusions: Flag diagnoses, clinical interpretations, treatment recommendations, or follow-up instructions that are not explicitly supported by the source data.
-    8. Clinical uncertainty: Do not assume that a statement is clinically correct merely because it sounds plausible. If the available information is insufficient to verify a clinical claim, flag it as requiring qualified healthcare professional review.
 
     Output Requirements:
 
-    Return a structured validation result containing:
+    Return only a valid JSON object containing:
 
     - status: "PASS" if no material issues are identified; otherwise "FAIL".
     - issues: A list of identified issues. For each issue, include its category, the relevant draft statement, an explanation, and the supporting source information when available.
     - missing_information: A list of important source details omitted from the draft.
-    - review_required: A boolean indicating whether qualified healthcare professional review is required.
 
     Do not rewrite the report, invent missing facts, or silently correct discrepancies. Return only the validation result in valid JSON format.
 
     """
     model = get_model()
-    response = model.invoke(prompt)
 
-    return response.content
+    response = model.invoke(prompt)
+    draft_data = json.loads(response.content)
+
+    return draft_data

@@ -1,8 +1,10 @@
+from io import BytesIO
+
 from fastapi import UploadFile
 from docx import Document
 
-def docx_text_extract(file: UploadFile):
-    
+async def docx_text_extract(file: UploadFile):
+
     content = await file.read()
 
     document = Document(BytesIO(content))

@@ -1,6 +1,11 @@
+import os
+
 from docx import Document
 
-def populate_template(data: dict, template_path: str, output_path: str):
+def populate_template(data: dict):
+
+    template_path = "Backend/uploads/template.docx"
+    output_path = os.path.join("Backend/reports", "report.docx")
     document = Document(template_path)
 
     for i, paragraph in enumerate(document.paragraphs):

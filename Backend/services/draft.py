@@ -1,3 +1,5 @@
+import json
+
 from model import get_model
 
 def create_draft(data: dict, template: dict):
