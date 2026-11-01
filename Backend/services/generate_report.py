@@ -1,12 +1,20 @@
 import os
-
+from pathlib import Path
 from docx import Document
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 def populate_template(data: dict):
 
-    template_path = "uploads/template.docx"
+    print("Before template path")
+    #template_path = "uploads/template.docx"
+    template_path = BASE_DIR / "uploads" / "template.docx"
+    print("After template path")
     output_path = os.path.join("reports", "report.docx")
     document = Document(template_path)
+    print("After template path 2")
+    print("Template path:", template_path)
+    print("File exists:", template_path.exists())
 
     for i, paragraph in enumerate(document.paragraphs):
         heading = paragraph.text.strip()

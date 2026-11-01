@@ -17,6 +17,8 @@ async def generate_report(template: UploadFile = File(...), support: UploadFile 
     os.makedirs(UPLOADS_DIR, exist_ok=True)
     template_path = os.path.join(UPLOADS_DIR, "template.docx")
 
+    await template.seek(0)
+
     template_bytes = await template.read()
     with open(template_path, "wb") as f:
         f.write(template_bytes)

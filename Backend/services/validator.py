@@ -26,7 +26,7 @@ def validate(draft: str, source: str):
     Output Requirements:
 
     Return only a valid JSON object containing:
-
+    - Do not wrap the JSON in Markdown code fences.
     - status: "PASS" if no material issues are identified; otherwise "FAIL".
     - issues: A list of identified issues. For each issue, include its category, the relevant draft statement, an explanation, and the supporting source information when available.
     - missing_information: A list of important source details omitted from the draft.
@@ -37,6 +37,9 @@ def validate(draft: str, source: str):
     model = get_model()
 
     response = model.invoke(prompt)
+
+    print(response)
+
     draft_data = json.loads(response.content)
 
     return draft_data
