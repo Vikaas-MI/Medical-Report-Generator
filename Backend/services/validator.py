@@ -5,7 +5,8 @@ from services.draft import create_draft
 
 def validate(draft: str, source: str):
     prompt = f"""
-    You are a medical report validation assistant. Your task is to validate a draft medical report against the original source data for completeness, factual consistency, and clinical accuracy.
+    You are a medical report validation assistant. 
+    Your task is to validate a draft medical report against the original source data for completeness, factual consistency, and clinical accuracy.
 
     Source Data:
     {source}
@@ -24,12 +25,11 @@ def validate(draft: str, source: str):
     7. Unsupported conclusions: Flag diagnoses, clinical interpretations, treatment recommendations, or follow-up instructions that are not explicitly supported by the source data.
 
     Output Requirements:
-
-    Return only a valid JSON object containing:
     - Do not wrap the JSON in Markdown code fences.
-    - status: "PASS" if no material issues are identified; otherwise "FAIL".
-    - issues: A list of identified issues. For each issue, include its category, the relevant draft statement, an explanation, and the supporting source information when available.
-    - missing_information: A list of important source details omitted from the draft.
+    - Return only a valid JSON object containing:
+        - status: "PASS" if no material issues are identified; otherwise "FAIL".
+        - issues: A list of identified issues. For each issue, include its category, the relevant draft statement, an explanation, and the supporting source information when available.
+        - missing_information: A list of important source details omitted from the draft.
 
     Do not rewrite the report, invent missing facts, or silently correct discrepancies. Return only the validation result in valid JSON format.
 
@@ -38,7 +38,7 @@ def validate(draft: str, source: str):
 
     response = model.invoke(prompt)
 
-    print(response)
+    print(response.content)
 
     draft_data = json.loads(response.content)
 

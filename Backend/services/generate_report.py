@@ -1,33 +1,33 @@
-import os
-from pathlib import Path
 from docx import Document
+from pathlib import Path
+import os
+from docx.oxml import OxmlElement
+from docx.text.paragraph import Paragraph
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 def populate_template(data: dict):
 
-    print("Before template path")
-    #template_path = "uploads/template.docx"
     template_path = BASE_DIR / "uploads" / "template.docx"
-    print("After template path")
     output_path = os.path.join("reports", "report.docx")
-    document = Document(template_path)
-    print("After template path 2")
-    print("Template path:", template_path)
-    print("File exists:", template_path.exists())
 
-    for i, paragraph in enumerate(document.paragraphs):
+    document = Document(template_path)
+
+    paragraphs = list(document.paragraphs)
+
+    for paragraph in paragraphs:
         heading = paragraph.text.strip()
 
         if heading in data:
             content = data[heading]
 
-            for next_paragraph in document.paragraphs[i + 1:]:
-                if next_paragraph.text.strip() in data:
-                    next_paragraph.insert_paragraph_before(content)
-                    break
-            else:
-                document.add_paragraph(content)
+            new_paragraph = OxmlElement("w:p")
+            paragraph._p.addnext(new_paragraph)
+
+            new_para = Paragraph(new_paragraph, paragraph._parent)
+            new_para.add_run(content)
 
     document.save(output_path)
+
     return output_path

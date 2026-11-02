@@ -17,25 +17,47 @@ class ReportState(TypedDict, total=False):
 
     #Validator Node
     validation: dict[str, Any]
+    revision_count: int
 
     #Genrator Node
     output_path: str
 
 
-def draft_report(state: ReportState):
-    draft = create_draft(state["supporting_text"], state["template_structure"])
+# Maximum number of redraft attempts before giving up and generating anyway.
+MAX_REVISIONS = 2
 
-    return {"report_draft":draft}
+
+def draft_report(state: ReportState):
+    # On the first pass there is no validation; on a redraft, pass the feedback.
+    draft = create_draft(
+        state["supporting_text"],
+        state["template_structure"],
+        state.get("validation"),
+    )
+
+    return {
+        "report_draft": draft,
+        "revision_count": state.get("revision_count", 0) + 1,
+    }
 
 def validate_report(state: ReportState):
     validation = validate(state["report_draft"], state["supporting_text"])
 
-    return {"validation":validation}
+    return {"validation": validation}
 
 def generate_docx(state: ReportState):
     output_path = populate_template(state["report_draft"])
 
     return {"output_path": output_path}
+
+
+def route_after_validation(state: ReportState) -> str:
+    validation = state.get("validation") or {}
+
+    if validation.get("status") == "FAIL" and state.get("revision_count", 0) < MAX_REVISIONS:
+        return "draft"
+
+    return "generate"
 
 
 builder = StateGraph(ReportState)
@@ -47,7 +69,11 @@ builder.add_node("generate", generate_docx)
 
 builder.add_edge(START, "draft")
 builder.add_edge("draft", "validate")
-builder.add_edge("validate", "generate")
+builder.add_conditional_edges(
+    "validate",
+    route_after_validation,
+    {"draft": "draft", "generate": "generate"},
+)
 builder.add_edge("generate", END)
 
 
