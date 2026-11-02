@@ -14,7 +14,11 @@ def populate_template(data: dict):
 
     document = Document(template_path)
 
-    paragraphs = list(document.paragraphs)
+    paragraphs = [
+    paragraph
+    for paragraph in document.paragraphs
+    if paragraph.style.name == "Normal"
+    ]
 
     for paragraph in paragraphs:
         heading = paragraph.text.strip()
