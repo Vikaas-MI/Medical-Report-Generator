@@ -1,61 +1,158 @@
-from io import BytesIO
-
-from fastapi import UploadFile
+from pathlib import Path
 from docx import Document
+from docx.oxml.ns import qn
 
-async def docx_text_extract(file: UploadFile):
 
-    content = await file.read()
+def _paragraph_text(paragraph):
+    return paragraph.text.strip()
 
-    document = Document(BytesIO(content))
+def _extract_textboxes(xml_part, part_name):
+        """Extract text from text boxes in a document part's XML."""
+        textboxes = []
 
-    # paragraphs
-    paragraphs = [
-        {
-            "text": p.text,
-            "style": p.style.name
+        for textbox_index, textbox in enumerate(
+            xml_part.iter(qn("w:txbxContent"))
+        ):
+            paragraphs = []
+
+            for paragraph in textbox.iter(qn("w:p")):
+                text = "".join(
+                    node.text or ""
+                    for node in paragraph.iter(qn("w:t"))
+                ).strip()
+
+                if text:
+                    paragraphs.append(text)
+
+            if paragraphs:
+                textboxes.append({
+                    "field_id": f"{part_name}_textbox_{textbox_index}",
+                    "text": "\n".join(paragraphs),
+                    "location": {
+                        "type": "textbox",
+                        "part": part_name,
+                        "textbox_index": textbox_index,
+                    },
+                })
+
+        return textboxes
+
+
+def extract_template(file_path: str | Path) -> dict:
+        document = Document(file_path)
+
+        result = {
+            "filename": Path(file_path).name,
+            "paragraphs": [],
+            "tables": [],
+            "headers": [],
+            "footers": [],
+            "textboxes": [],
         }
-        for p in document.paragraphs
-        if p.text.strip()
-    ]
 
-    # tables
-    tables = []
+        # Main document paragraphs
+        for index, paragraph in enumerate(document.paragraphs):
+            text = _paragraph_text(paragraph)
 
-    for table in document.tables:
-        rows = []
+            if text:
+                result["paragraphs"].append({
+                    "field_id": f"paragraph_{index}",
+                    "text": text,
+                    "style": paragraph.style.name,
+                    "location": {
+                        "type": "paragraph",
+                        "index": index,
+                    },
+                })
 
-        for row in table.rows:
-            rows.append([cell.text for cell in row.cells])
+        # Tables in the main document
+        for table_index, table in enumerate(document.tables):
+            table_data = {
+                "table_id": f"table_{table_index}",
+                "rows": [],
+            }
 
-        tables.append(rows)
+            for row_index, row in enumerate(table.rows):
+                row_data = []
 
-    # headers
-    headers = [
-        section.header.paragraphs[0].text
-        for section in document.sections
-        if section.header.paragraphs
-    ]
+                for cell_index, cell in enumerate(row.cells):
+                    row_data.append({
+                        "field_id": (
+                            f"table_{table_index}_row_{row_index}_cell_{cell_index}"
+                        ),
+                        "text": cell.text.strip(),
+                        "location": {
+                            "type": "table_cell",
+                            "table": table_index,
+                            "row": row_index,
+                            "cell": cell_index,
+                        },
+                    })
 
-    # footers
-    footers = [
-        section.footer.paragraphs[0].text
-        for section in document.sections
-        if section.footer.paragraphs
-    ]
+                table_data["rows"].append(row_data)
 
-    # headings
-    headings = [
-        p.text
-        for p in document.paragraphs
-        if p.style.name.startswith("Heading") and p.text.strip()
-    ]
+            result["tables"].append(table_data)
 
-    return {
-        "filename": file.filename,
-        "paragraphs": paragraphs,
-        "headings": headings,
-        "tables": tables,
-        "headers": headers,
-        "footers": footers
-    }
+        # Headers and footers, including their paragraphs and tables
+        for section_index, section in enumerate(document.sections):
+            for part_name, part in (
+                ("header", section.header),
+                ("footer", section.footer),
+            ):
+                part_data = {
+                    "section": section_index,
+                    "paragraphs": [],
+                    "tables": [],
+                }
+
+                for paragraph_index, paragraph in enumerate(part.paragraphs):
+                    text = _paragraph_text(paragraph)
+
+                    if text:
+                        part_data["paragraphs"].append({
+                            "field_id": (
+                                f"{part_name}_{section_index}_paragraph_{paragraph_index}"
+                            ),
+                            "text": text,
+                        })
+
+                for table_index, table in enumerate(part.tables):
+                    rows = []
+
+                    for row_index, row in enumerate(table.rows):
+                        rows.append([
+                            cell.text.strip()
+                            for cell in row.cells
+                        ])
+
+                    part_data["tables"].append({
+                        "table_index": table_index,
+                        "rows": rows,
+                    })
+
+                result[f"{part_name}s"].append(part_data)
+
+        # Text boxes in the main document, headers, and footers
+        result["textboxes"].extend(
+            _extract_textboxes(document.element.body, "document")
+        )
+
+        for section_index, section in enumerate(document.sections):
+            result["textboxes"].extend(
+                _extract_textboxes(
+                    section.header._element,
+                    f"header_section_{section_index}",
+                )
+            )
+            result["textboxes"].extend(
+                _extract_textboxes(
+                    section.footer._element,
+                    f"footer_section_{section_index}",
+                )
+            )
+
+        return result
+
+
+
+    
