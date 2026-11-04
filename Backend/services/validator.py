@@ -1,7 +1,7 @@
 import json
 import re
+
 from model import get_model
-from services.draft import create_draft
 
 def validate(draft: dict, source: dict, template: dict, analysed: dict):
     prompt = f"""
@@ -16,7 +16,7 @@ def validate(draft: dict, source: dict, template: dict, analysed: dict):
     {template}
 
     ANALYSED TEMPLATE:
-    {analysed_template}
+    {analysed}
 
     DRAFT MEDICAL REPORT:
     {draft}
@@ -122,7 +122,6 @@ def validate(draft: dict, source: dict, template: dict, analysed: dict):
         content,
         flags=re.IGNORECASE
     ).strip()
-
 
     valid_data = json.loads(content)
 
