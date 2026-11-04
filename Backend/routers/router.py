@@ -28,9 +28,10 @@ async def generate_report(template: UploadFile = File(...), support: UploadFile 
     await _save_upload(template, template_path)
     await _save_upload(support, support_path)
 
-    # Extract structured content from the saved files.
     template_extracted = extract_template(template_path)
     support_file_extracted = extract_template(support_path)
+
+    print(template_extracted)
 
     result = graph.invoke({
         "template_structure": template_extracted,
