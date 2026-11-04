@@ -48,7 +48,7 @@ if submitted:
                     ),
                 }
 
-                response = requests.post(GENERATE_ENDPOINT, files=files, timeout=300)
+                response = requests.post(GENERATE_ENDPOINT, files=files, timeout=900)
             except requests.exceptions.ConnectionError:
                 st.error(
                     "Could not reach the backend. "
