@@ -4,6 +4,7 @@ from typing import TypedDict, Any
 from services.draft import create_draft
 from services.generate_report import populate_template
 from services.validator import validate
+from services.analyzer import analyze
 
 
 
@@ -11,6 +12,9 @@ class ReportState(TypedDict, total=False):
 
     template_structure: dict[str, Any]
     supporting_text: dict[str, Any]
+
+    #Analyzer Node
+    analyze_data: dict[str, Any]
 
     #Draft Node
     report_draft: dict[str, Any]
@@ -22,15 +26,19 @@ class ReportState(TypedDict, total=False):
     #Genrator Node
     output_path: str
 
-
 # Maximum number of redraft attempts before giving up and generating anyway.
 MAX_REVISIONS = 2
 
+def analyze_report(state: ReportState):
+    analyzed = analyze(state["template_structure"])
+    return{
+        "analyze_data" : analyzed
+    }
 
 def draft_report(state: ReportState):
-    # On the first pass there is no validation; on a redraft, pass the feedback.
     draft = create_draft(
         state["supporting_text"],
+        state["analyze_data"],
         state["template_structure"],
         state.get("validation"),
     )
@@ -45,6 +53,7 @@ def validate_report(state: ReportState):
         state["report_draft"],
         state["supporting_text"],
         state["template_structure"],
+        state["analyze_data"]
     )
 
     return {"validation": validation}
@@ -65,12 +74,14 @@ def route_after_validation(state: ReportState) -> str:
 
 builder = StateGraph(ReportState)
 
+builder.add_node("analyze", analyze_report)
 builder.add_node("draft", draft_report)
 builder.add_node("validate", validate_report)
 builder.add_node("generate", generate_docx)
 
 
-builder.add_edge(START, "draft")
+builder.add_edge(START, "analyze")
+builder.add_edge("analyze","draft")
 builder.add_edge("draft", "validate")
 builder.add_conditional_edges(
     "validate",

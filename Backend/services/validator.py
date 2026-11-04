@@ -3,7 +3,7 @@ import re
 from model import get_model
 from services.draft import create_draft
 
-def validate(draft: str, source: str, template: str):
+def validate(draft: dict, source: dict, template: dict, analysed: dict):
     prompt = f"""
     You are a medical report validation assistant.
 
@@ -14,6 +14,9 @@ def validate(draft: str, source: str, template: str):
 
     UPLOADED TEMPLATE STRUCTURE:
     {template}
+
+    ANALYSED TEMPLATE:
+    {analysed_template}
 
     DRAFT MEDICAL REPORT:
     {draft}
@@ -65,6 +68,13 @@ def validate(draft: str, source: str, template: str):
     8. STRUCTURE AND READABILITY
     - Check whether the draft follows the original template's section order and structure.
     - Ensure that no new template sections or unrelated fields have been introduced.
+
+    9. ANALYSED TEMPLATE VALIDATION
+    - Use the analysed template to understand the purpose, meaning, and expected content of each field.
+    - Verify that drafted content matches the intended purpose of each field.
+    - Use the original extracted template to verify the actual field IDs, original content, and locations.
+    - Do not treat the analysed template as the source of truth for field IDs or original template content.
+    - If the analysed template and original extraction appear inconsistent, flag the uncertainty rather than guessing.
 
     OUTPUT REQUIREMENTS:
 
