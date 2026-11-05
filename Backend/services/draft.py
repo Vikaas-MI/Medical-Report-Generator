@@ -121,6 +121,11 @@ def create_draft(data: dict, analyzed_data: dict, template: dict, validation: di
         flags=re.IGNORECASE
     ).strip()
 
+    print("\n---------------------------------------------\n")
+    print("\n Draft writing Agent\n")
+    print(content)
+    print("\n---------------------------------------------\n")
+    
     draft_data = json.loads(content)
 
     return draft_data

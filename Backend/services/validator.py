@@ -122,6 +122,10 @@ def validate(draft: dict, source: dict, template: dict, analysed: dict):
         content,
         flags=re.IGNORECASE
     ).strip()
+    print("\n---------------------------------------------\n")
+    print("\n Validation Agent\n")
+    print(content)
+    print("\n---------------------------------------------\n")
 
     valid_data = json.loads(content)
 
