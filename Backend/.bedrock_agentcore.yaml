@@ -1,0 +1,62 @@
+default_agent: medical_report_generator
+agents:
+  medical_report_generator:
+    name: medical_report_generator
+    language: python
+    node_version: '20'
+    entrypoint: D:/MI/Medical Report Generator/Medical-Report-Generator/Backend/agent_entrypoint.py
+    deployment_type: container
+    runtime_type: null
+    platform: linux/arm64
+    container_runtime: none
+    source_path: D:\MI\Medical Report Generator\Medical-Report-Generator\Backend
+    aws:
+      execution_role: arn:aws:iam::151440288946:role/AmazonBedrockAgentCoreSDKRuntime-us-east-1-4eee5da97b
+      execution_role_auto_create: false
+      account: '151440288946'
+      region: us-east-1
+      ecr_repository: 151440288946.dkr.ecr.us-east-1.amazonaws.com/bedrock-agentcore-medical_report_generator
+      ecr_auto_create: false
+      s3_path: null
+      s3_auto_create: false
+      network_configuration:
+        network_mode: PUBLIC
+        network_mode_config: null
+      protocol_configuration:
+        server_protocol: HTTP
+      observability:
+        enabled: true
+      lifecycle_configuration:
+        idle_runtime_session_timeout: null
+        max_lifetime: null
+    bedrock_agentcore:
+      agent_id: medical_report_generator-s8d65o67Bv
+      agent_arn: arn:aws:bedrock-agentcore:us-east-1:151440288946:runtime/medical_report_generator-s8d65o67Bv
+      agent_session_id: null
+    codebuild:
+      project_name: bedrock-agentcore-medical_report_generator-builder
+      execution_role: arn:aws:iam::151440288946:role/AmazonBedrockAgentCoreSDKCodeBuild-us-east-1-4eee5da97b
+      source_bucket: bedrock-agentcore-codebuild-sources-151440288946-us-east-1
+    memory:
+      mode: NO_MEMORY
+      memory_id: null
+      memory_arn: null
+      memory_name: null
+      event_expiry_days: 30
+      first_invoke_memory_check_done: false
+      was_created_by_toolkit: false
+    identity:
+      credential_providers: []
+      workload: null
+    aws_jwt:
+      enabled: false
+      audiences: []
+      signing_algorithm: ES384
+      issuer_url: null
+      duration_seconds: 300
+    authorizer_configuration: null
+    request_header_configuration: null
+    oauth_configuration: null
+    api_key_env_var_name: null
+    api_key_credential_provider_name: null
+    is_generated_by_agentcore_create: false

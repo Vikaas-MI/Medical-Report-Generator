@@ -1,0 +1,21 @@
+# Runtime dependencies for the AgentCore Runtime container.
+# The frontend (streamlit) and dev-only tooling (pytest) are intentionally omitted.
+
+# AgentCore SDK (provides BedrockAgentCoreApp + the /invocations + /ping server)
+bedrock-agentcore==1.25.4
+
+# Agent workflow
+langgraph==1.2.18
+langchain-aws==1.9.1
+langchain-core==1.7.1
+
+# AWS SDK (Bedrock runtime client)
+boto3==1.43.121
+botocore==1.43.121
+
+# Document handling
+python-docx==1.2.0
+lxml==6.1.3
+
+# Config
+python-dotenv==1.2.4
