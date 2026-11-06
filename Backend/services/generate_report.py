@@ -61,6 +61,9 @@ class _ElementMapper:
             if node.tag == qn("w:txbxContent"):
                 textbox_index = self._next("textbox")
                 self.textboxes[f"textbox_{textbox_index}"] = node
+                # Mirror extract_textbox -> walk_container: the textbox's
+                # inner paragraphs/tables consume block/table counters too.
+                self.walk_container(node)
                 return
             if node.tag in {qn("w:pPr"), qn("w:rPr")}:
                 return

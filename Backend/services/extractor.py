@@ -16,6 +16,7 @@ class ExtractionContext:
             "block": 0,
             "table": 0,
             "textbox": 0,
+            "content_control": 0,
         }
 
     def next_id(self, element_type):
@@ -246,12 +247,28 @@ def extract_table(element, location, context):
                 "cell": cell_index,
             }
 
+            # --- merged cell info ---
+            col_span = 1
+            v_merge = None
+
+            tcPr = cell.find(qn("w:tcPr"))
+            if tcPr is not None:
+                grid_span = tcPr.find(qn("w:gridSpan"))
+                if grid_span is not None:
+                    col_span = int(grid_span.get(qn("w:val"), 1))
+
+                vm = tcPr.find(qn("w:vMerge"))
+                if vm is not None:
+                    v_merge = vm.get(qn("w:val"), "continue")
+
             cells.append({
                 "field_id": (
                     f"{table_id}_row_{row_index}_cell_{cell_index}"
                 ),
                 "type": "table_cell",
                 "location": cell_location,
+                "col_span": col_span,
+                "v_merge": v_merge,
                 "blocks": walk_container(
                     cell,
                     cell_location,
@@ -269,9 +286,7 @@ def extract_table(element, location, context):
     }
 
 
-# ==================================================
-# 8. UNIFIED RECURSIVE EXTRACTION LOOP
-# ==================================================
+
 
 def walk_container(container, parent_location, context):
 
@@ -313,8 +328,10 @@ def walk_container(container, parent_location, context):
 
             if sdt_content is not None:
 
+                cc_index = context.next_id("content_control")
+
                 blocks.append({
-                    "field_id": f"content_control_{index}",
+                    "field_id":  f"content_control_{cc_index}",
                     "type": "content_control",
                     "location": location,
                     "blocks": walk_container(
@@ -419,6 +436,8 @@ def extract_template(file_path: str | Path) -> dict:
                 section.different_first_page_header_footer
             ),
         })
+
+    print("Extraction done")
 
     return {
         "filename": Path(file_path).name,

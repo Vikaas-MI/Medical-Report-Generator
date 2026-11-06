@@ -7,7 +7,8 @@ def validate(draft: dict, source: dict, template: dict, analysed: dict):
     prompt = f"""
     You are a medical report validation assistant.
 
-    Your task is to validate a draft medical report against the original source medical data and the uploaded template structure. Check for factual consistency, completeness, clinical accuracy, and correct field mapping.
+    Your task is to validate a draft medical report against the original source medical data and the uploaded template structure. 
+    Check for factual consistency, completeness, clinical accuracy, and correct field mapping.
 
     SOURCE MEDICAL DATA:
     {source}
@@ -15,7 +16,7 @@ def validate(draft: dict, source: dict, template: dict, analysed: dict):
     UPLOADED TEMPLATE STRUCTURE:
     {template}
 
-    ANALYSED TEMPLATE:
+    TEMPLATE ANALYSED:
     {analysed}
 
     DRAFT MEDICAL REPORT:
@@ -122,11 +123,9 @@ def validate(draft: dict, source: dict, template: dict, analysed: dict):
         content,
         flags=re.IGNORECASE
     ).strip()
-    print("\n---------------------------------------------\n")
-    print("\n Validation Agent\n")
-    print(content)
-    print("\n---------------------------------------------\n")
 
     valid_data = json.loads(content)
+
+    print("Validation done")
 
     return valid_data
