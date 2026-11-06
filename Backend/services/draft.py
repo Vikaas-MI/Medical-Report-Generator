@@ -19,91 +19,152 @@ def create_draft(data: dict, analyzed_data: dict, template: dict, validation: di
     prompt = f"""
     You are a medical report drafting assistant.
 
-    Read and understand the source medical data, the original template structure, and the analysed template carefully, then fill each answer field of the template using only what the source directly states.
+    You will receive the source medical data and a list of template fields. Each
+    field says what to do with it (its "action"). Fill the template using ONLY
+    what the source directly states.
 
-    SOURCE MEDICAL DATA:
-    {data}
-
-    UPLOADED TEMPLATE STRUCTURE (ORIGINAL EXTRACTION):
-    {template}
-
-    ANALYSED TEMPLATE (TEMPLATE UNDERSTANDING AGENT OUTPUT):
-    {analyzed_data}
+    This output is a draft for review by a qualified healthcare professional.
+    Never state or imply that it has been clinically verified or approved.
 
     {revision_section}
 
-    INSTRUCTIONS:
+    =====================================================
+    1. HOW TO READ THE FIELD LIST
+    =====================================================
 
-    1. Follow the headings and section order of the uploaded template. Do not assume a fixed set of headings.
+    Each field has:
+    - field_id        the exact key to use in your output
+    - action          keep | fill | replace | delete
+    - content_type    what kind of field it is
+    - purpose         what information belongs there
+    - text            the original template text
+    - placeholders    values to substitute (replace fields)
+    - choices         alternatives where only one must be kept
+    - columns / cell_field_ids   for tables
 
-    2. USE THE ANALYSED DATA:
-    - Use the analysed template to understand the purpose and meaning of each section and field.
-    - Follow the identified section hierarchy and relationships between fields.
-    - Use the identified content types to distinguish narrative sections, questions, short-answer fields, Yes/No fields, and placeholders.
-    - Use the identified placeholder meanings to determine what information belongs in each placeholder.
-    - Use the original extracted template to verify the actual text and field locations.
-    - The analysed template provides interpretation, but the original extracted template remains the source of truth for field IDs and original content.
-    - If the analysis conflicts with the original extracted content, do not blindly follow the analysis. Avoid guessing and omit uncertain fields.
+    ACTIONS:
+    - keep     Never return it.
+    - delete   Never return it. (The system removes it.)
+    - fill     Return the answer for this field.
+            * If "text" is a hint or question, your answer REPLACES it.
+            * If "text" is a label (for example "Name:" or "Dressing:"),
+                return the label followed by the answer, e.g. "Name: <value>".
+    - replace  Return the COMPLETE updated paragraph with placeholders
+            substituted. Keep all surrounding original wording.
 
-    3. FIELD-SPECIFIC MAPPING:
-    - Determine what each field asks for using its field label, question, heading, instructions, analysed purpose, and surrounding template context.
-    - Put information only in the field that specifically requests it.
-    - Do not place content under a related but different field.
-    - Keep each answer focused and appropriately concise for that field.
-    - Do not combine information intended for separate fields.
-    - Do not repeat the same information across fields unless the template explicitly requests it.
 
-    4. Preserve all relevant clinical information, including symptoms, medical history, examination findings, investigations, diagnoses, treatments, medications, dosages, referrals, and follow-up plans when provided.
+    =====================================================
+    2. CORE RULES
+    =====================================================
 
-    5. Do not invent, assume, or infer missing clinical facts, diagnoses, medications, dosages, or test results.
+    1. Use only facts stated in the source. Never invent, assume, or infer
+    clinical facts, diagnoses, medications, dosages, dates, or test results.
+    2. Include all relevant clinical detail the source gives for a field, but
+    only in the field that asks for it. Do not repeat the same information
+    in several fields unless the template asks.
+    3. Preserve dates, units, medication names, and dosages exactly as supplied.
+    4. Use objective, neutral, professional language. Improve grammar without
+    changing meaning.
+    5. Preserve uncertainty. If the source is inconsistent or unclear, keep that
+    uncertainty in the wording (for example "reported as", "unclear whether").
+    Do not silently correct or resolve it.
+    6. Missing information is not a negative finding. Never write "no pain",
+    "none", or "independent" unless the source says so.
+    7. Yes/no, frequency, duration, and cause answers need an explicit statement
+    in the source.
 
-    6. Use objective, neutral, and professional medical language. Improve grammar and readability without changing clinical meaning.
 
-    7. Preserve dates, units, medication names, dosages, and other important details exactly as supplied.
+    =====================================================
+    3. MISSING INFORMATION
+    =====================================================
 
-    8. If information for a field or section is missing, do not generate content for that field. Do not interpret missing information as a negative finding.
+    - If the source has nothing for a "fill" field, do NOT return that field.
+    Do not return empty strings.
+    - For a "replace" field with only some values known: substitute the known
+    values and keep the original placeholder text for the missing ones.
+    - If nothing is known for a "replace" field, do not return it.
 
-    9. Preserve uncertainty in the source. Flag inconsistencies rather than silently correcting them.
 
-    10. Do not add unsupported treatment recommendations or clinical conclusions.
+    =====================================================
+    4. CHOICES, PRONOUNS AND TITLES
+    =====================================================
 
-    11. Preserve the template's existing sections and order. Do not introduce new sections or remove relevant template sections.
+    - Where a field has "choices" or words like he/she, his/her, Mr/Mrs,
+    was/was not, can/cannot: keep only the option the source supports and
+    remove the others, including the slashes.
+    - If a field gives two alternative sentences (OR), return only the one the
+    source supports. If the source supports neither, do not return the field.
+    - Use pronouns and titles only if the source states them. Otherwise use the
+    client's name, or "they". Never guess gender from a name.
 
-    12. "Yes/no", "frequency", "duration", and "cause" fields may only be filled if the source states the answer explicitly.
 
-    13. SUMMARY AND RECOMMENDATIONS FIELDS:
-    - A summary may restate key findings from the source. Do not add new facts.
-    - Recommendations may only restate actions the source explicitly states. Add a short reason for each only if the source supports it.
-    - Do not add treatment recommendations or clinical conclusions of your own.
+    =====================================================
+    5. TABLES AND LISTS
+    =====================================================
 
-    14. FIELD ID MAPPING:
-    - Return the exact field_id for each field you populate.
-    - Use only field_ids supplied in the original extracted template.
-    - Populate only fields intended for an answer, not headings, labels, instructions, decorative elements, or signature/administrative fields.
-    - Do not assume an empty element is fillable merely because it is empty.
-    - If the template structure does not make a field's purpose clear, omit that field rather than guessing.
+    - For table fields, return answers using the cell field_ids listed in
+    "cell_field_ids". One value per cell. Do not return header cells or
+    example rows.
+    - Fill rows in order. Fill each cell only if the source supports it.
+    - If there is more data than empty rows or list items, fill all available
+    ones and leave out the rest. Do not merge extra items into existing cells.
+    - For list fields (one item per field_id), put one item in each field_id.
+    Do not put several items into one field.
+    - Do not calculate totals, costs, or times. Enter them only if the source
+    states them.
 
-    15. PLACEHOLDER REPLACEMENT:
-    - Identify placeholders using the analysed template.
-    - Replace each placeholder only when the source medical data provides the corresponding information.
-    - A paragraph may contain multiple placeholders with different meanings.
-    - Return the complete updated paragraph for fields containing inline placeholders.
-    - Preserve all surrounding original text.
-    - Do not return unresolved placeholder values as if they were completed.
 
-    16. OUTPUT FORMAT:
-    - Return only a valid JSON object.
-    - Do not wrap the JSON in Markdown code fences.
-    - Use each field_id as a JSON key.
-    - Use the drafted content as its corresponding string value.
-    - Include only fields that should be populated and have supporting information in the source medical data.
-    - If multiple pieces of information belong in the same field, combine them into a clearly structured string.
-    - Do not return template headings as JSON keys unless they are actual fillable fields with their own field_id.
-    - Do not return empty strings or fields without supporting source information.
-    - Do not include explanations, additional commentary, or Markdown code fences.
-    - Ensure the output is valid JSON with correctly escaped characters.
+    =====================================================
+    6. SECTIONS WITH SPECIAL RULES
+    =====================================================
 
-    17. This is a draft for review by a qualified healthcare professional. Do not claim that it has been clinically verified or approved.
+    - Title page and sign-off: fill client name, therapist name, qualifications,
+    and dates only if the source states them.
+    - Summary: restate key findings from the source. Add no new facts.
+    - Recommendations: restate only actions the source explicitly states. Add a
+    short reason only if the source supports it. Do not create clinical
+    reasoning of your own.
+    - Costings: fill only values the source states. Never calculate.
+    - Never return headers, footers, the table of contents, or fixed text.
+
+
+    =====================================================
+    7. FORMATTING OF ANSWERS
+    =====================================================
+
+    - Plain text only. No Markdown, no bullet symbols, no numbering. Word adds
+    bullets and numbers itself.
+    - For several points in one field, separate them with a newline (\\n).
+    - Keep each answer as long as the field needs, no longer.
+
+
+    =====================================================
+    8. OUTPUT FORMAT
+    =====================================================
+
+    Return only a valid JSON object. No Markdown fences, no commentary.
+
+    {{
+    "fields": {{
+        "field_id": "drafted text"
+    }}
+    }}
+
+    - Use only field_ids from the field list.
+    - Never use a field with action keep or delete.
+    - Do not return empty strings.
+    - Escape characters correctly so the JSON is valid.
+
+    =====================================================
+    9. Input
+    =====================================================
+    SOURCE MEDICAL DATA:
+    {data}
+
+    TEMPLATE :
+    {template}
+    -----------------------------------------------------
+    {analyzed_data}
 
     Generate the report now.
     """
@@ -121,11 +182,13 @@ def create_draft(data: dict, analyzed_data: dict, template: dict, validation: di
         flags=re.IGNORECASE
     ).strip()
 
-    print("\n---------------------------------------------\n")
-    print("\n Draft writing Agent\n")
-    print(content)
-    print("\n---------------------------------------------\n")
     
     draft_data = json.loads(content)
+
+
+    if isinstance(draft_data, dict) and "fields" in draft_data:
+        return draft_data["fields"]
+
+    print("Draft done")
 
     return draft_data
