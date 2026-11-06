@@ -31,8 +31,6 @@ async def generate_report(template: UploadFile = File(...), support: UploadFile 
     template_extracted = extract_template(template_path)
     support_file_extracted = extract_template(support_path)
 
-    print(template_extracted)
-
     result = graph.invoke({
         "template_structure": template_extracted,
         "supporting_text": support_file_extracted,

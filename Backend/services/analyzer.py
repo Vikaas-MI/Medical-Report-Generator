@@ -219,27 +219,10 @@ def analyze(template_structure: dict):
         flags=re.IGNORECASE
     ).strip()
 
-    print("Response length:", len(content))
-    print("Response metadata:", response.response_metadata)
-
-    try:
-        analyzed_data = json.loads(content)
-
-    except json.JSONDecodeError as e:
-        print("\n--- JSON ERROR ---")
-        print("Message:", e)
-        print("Line:", e.lineno)
-        print("Column:", e.colno)
-        print("Position:", e.pos)
-
-        print("\n--- RESPONSE AROUND ERROR ---")
-        print(repr(content[max(0, e.pos - 200):e.pos + 300]))
-
-        print("\n--- RESPONSE END ---")
-        print(repr(content[-500:]))
-
-        raise
-
-    #analyzed_data = json.loads(content)
+    print("\n---------------------------------------------\n")
+    print("\nTemplate Understanding Agent\n")
+    print(content)
+    print("\n---------------------------------------------\n")
+    analyzed_data = json.loads(content)
 
     return analyzed_data
